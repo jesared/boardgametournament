@@ -16,11 +16,21 @@ function extractAttribute(fragment: string, attribute: string) {
 }
 
 async function fetchXml(path: string) {
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
-    "http://localhost:3000";
-  const url = new URL(`${baseUrl}/api/bgg`);
+  const proxyBase =
+    process.env.BGG_PROXY_URL ||
+    process.env.NEXT_PUBLIC_BGG_PROXY_URL ||
+    (process.env.NEXT_PUBLIC_APP_URL ||
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
+      "http://localhost:3000");
+  const url = new URL(
+    proxyBase.startsWith("http")
+      ? proxyBase
+      : `https://${proxyBase}`,
+  );
+
+  if (!proxyBase.includes("/api/bgg") && !proxyBase.includes("?type=")) {
+    url.pathname = "/api/bgg";
+  }
 
   if (path.startsWith("/search")) {
     const query = new URLSearchParams(path.split("?")[1] ?? "");
