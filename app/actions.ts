@@ -858,6 +858,9 @@ export async function setTableRanking(formData: FormData) {
       "Table introuvable.",
     );
   }
+  if (!table) {
+    return;
+  }
 
   if (table.roundId !== roundId) {
     redirectWithError(
