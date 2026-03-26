@@ -1,5 +1,6 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { headers } from "next/headers";
+import { ClipboardList, Crown, Dices, Flag, Grid3X3, Medal, Trophy, Users } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { SessionTabs } from "@/components/session-tabs";
 import { SessionTopbar } from "@/components/session-topbar";
 import { LiveRefresh } from "@/components/live-refresh";
+import { ShareLinkCopy } from "@/components/share-link-copy";
 import { formatDate } from "@/lib/format";
 import { buildLeaderboard } from "@/lib/leaderboard";
 import { prisma } from "@/lib/prisma";
@@ -64,6 +66,28 @@ export default async function SessionOverviewPage(
         title={session.name}
         subtitle={`Date: ${formatDate(session.date)}`}
         badge="Vue session"
+        actions={
+          <>
+            <Link
+              href={`/sessions/${id}/players`}
+              className="rounded-lg border border-border px-4 py-2 text-xs font-semibold text-foreground transition-colors duration-300 hover:bg-muted"
+            >
+              Ajouter joueurs
+            </Link>
+            <Link
+              href={`/sessions/${id}/games`}
+              className="rounded-lg border border-border px-4 py-2 text-xs font-semibold text-foreground transition-colors duration-300 hover:bg-muted"
+            >
+              Ajouter jeux
+            </Link>
+            <Link
+              href={`/sessions/${id}/rounds`}
+              className="rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground transition-colors duration-300 hover:bg-primary/90"
+            >
+              Creer manche
+            </Link>
+          </>
+        }
       />
 
       <SessionTabs sessionId={id} current="overview" />
@@ -75,8 +99,11 @@ export default async function SessionOverviewPage(
           <CardDescription>Suivi rapide de l avancement de la session.</CardDescription>
         </CardHeader>
         <CardContent>
-          <ol className="space-y-3 text-sm">
-            <li className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-muted px-4 py-3">
+          <ol className="relative space-y-4 border-l border-border pl-6 text-sm">
+            <li className="relative flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-muted/60 px-4 py-3">
+              <span className="absolute -left-3 top-4 flex size-6 items-center justify-center rounded-full border border-border bg-secondary/40 text-foreground">
+                <Flag className="size-3" />
+              </span>
               <div>
                 <p className="font-semibold">1. Session creee</p>
                 <p className="text-xs text-muted-foreground">
@@ -87,7 +114,10 @@ export default async function SessionOverviewPage(
                 OK
               </Badge>
             </li>
-            <li className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-muted px-4 py-3">
+            <li className="relative flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-muted/60 px-4 py-3">
+              <span className="absolute -left-3 top-4 flex size-6 items-center justify-center rounded-full border border-border bg-secondary/40 text-foreground">
+                <Users className="size-3" />
+              </span>
               <div>
                 <p className="font-semibold">2. Joueurs</p>
                 <p className="text-xs text-muted-foreground">
@@ -104,7 +134,10 @@ export default async function SessionOverviewPage(
                 </Badge>
               )}
             </li>
-            <li className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-muted px-4 py-3">
+            <li className="relative flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-muted/60 px-4 py-3">
+              <span className="absolute -left-3 top-4 flex size-6 items-center justify-center rounded-full border border-border bg-secondary/40 text-foreground">
+                <Dices className="size-3" />
+              </span>
               <div>
                 <p className="font-semibold">3. Jeux</p>
                 <p className="text-xs text-muted-foreground">
@@ -121,7 +154,10 @@ export default async function SessionOverviewPage(
                 </Badge>
               )}
             </li>
-            <li className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-muted px-4 py-3">
+            <li className="relative flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-muted/60 px-4 py-3">
+              <span className="absolute -left-3 top-4 flex size-6 items-center justify-center rounded-full border border-border bg-secondary/40 text-foreground">
+                <Grid3X3 className="size-3" />
+              </span>
               <div>
                 <p className="font-semibold">4. Manches et tables</p>
                 <p className="text-xs text-muted-foreground">
@@ -138,7 +174,10 @@ export default async function SessionOverviewPage(
                 </Badge>
               )}
             </li>
-            <li className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-muted px-4 py-3">
+            <li className="relative flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-muted/60 px-4 py-3">
+              <span className="absolute -left-3 top-4 flex size-6 items-center justify-center rounded-full border border-border bg-secondary/40 text-foreground">
+                <ClipboardList className="size-3" />
+              </span>
               <div>
                 <p className="font-semibold">5. Resultats</p>
                 <p className="text-xs text-muted-foreground">
@@ -155,7 +194,10 @@ export default async function SessionOverviewPage(
                 </Badge>
               )}
             </li>
-            <li className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-muted px-4 py-3">
+            <li className="relative flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-muted/60 px-4 py-3">
+              <span className="absolute -left-3 top-4 flex size-6 items-center justify-center rounded-full border border-border bg-secondary/40 text-foreground">
+                <Trophy className="size-3" />
+              </span>
               <div>
                 <p className="font-semibold">6. Classement</p>
                 <p className="text-xs text-muted-foreground">
@@ -176,7 +218,7 @@ export default async function SessionOverviewPage(
             <CardTitle>Joueurs</CardTitle>
             <CardDescription>Total joueurs</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="rounded-xl bg-gradient-to-br from-secondary/30 via-card to-card">
             <p className="text-2xl font-semibold">{players.length}</p>
           </CardContent>
         </Card>
@@ -185,7 +227,7 @@ export default async function SessionOverviewPage(
             <CardTitle>Jeux</CardTitle>
             <CardDescription>Catalogue actif</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="rounded-xl bg-gradient-to-br from-accent/30 via-card to-card">
             <p className="text-2xl font-semibold">{games.length}</p>
           </CardContent>
         </Card>
@@ -194,7 +236,7 @@ export default async function SessionOverviewPage(
             <CardTitle>Manches</CardTitle>
             <CardDescription>Manches creees</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="rounded-xl bg-gradient-to-br from-primary/25 via-card to-card">
             <p className="text-2xl font-semibold">{rounds.length}</p>
           </CardContent>
         </Card>
@@ -203,7 +245,7 @@ export default async function SessionOverviewPage(
             <CardTitle>Resultats</CardTitle>
             <CardDescription>Scores saisis</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="rounded-xl bg-gradient-to-br from-secondary/20 via-card to-card">
             <p className="text-2xl font-semibold">{participants.length}</p>
           </CardContent>
         </Card>
@@ -234,6 +276,7 @@ export default async function SessionOverviewPage(
                     Regenerer
                   </button>
                 </form>
+                {shareUrl ? <ShareLinkCopy url={shareUrl} /> : null}
                 <form action={revokeShareToken}>
                   <input type="hidden" name="sessionId" value={id} />
                   <button className="h-9 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors duration-300 hover:bg-primary/90">
@@ -276,21 +319,46 @@ export default async function SessionOverviewPage(
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {leaderboard.map((entry, index) => (
-                    <TableRow key={entry.playerId}>
-                      <TableCell className="font-semibold">
-                        {index + 1}
-                      </TableCell>
-                      <TableCell>{entry.name}</TableCell>
-                      <TableCell>{entry.totalPoints}</TableCell>
-                      <TableCell>{entry.wins}</TableCell>
-                      <TableCell>
-                        {entry.averagePosition
-                          ? entry.averagePosition.toFixed(2)
-                          : "-"}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {leaderboard.map((entry, index) => {
+                    const highlight =
+                      index === 0
+                        ? "bg-primary/15 text-primary-foreground"
+                        : index === 1
+                          ? "bg-secondary/20 text-foreground"
+                          : index === 2
+                            ? "bg-accent/20 text-foreground"
+                            : "";
+                    const icon =
+                      index === 0 ? (
+                        <Crown className="size-4 text-primary" />
+                      ) : index === 1 ? (
+                        <Trophy className="size-4 text-secondary" />
+                      ) : index === 2 ? (
+                        <Medal className="size-4 text-accent" />
+                      ) : null;
+                    return (
+                      <TableRow key={entry.playerId}>
+                        <TableCell className="font-semibold">
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`inline-flex size-8 items-center justify-center rounded-full border border-border ${highlight}`}
+                            >
+                              {index + 1}
+                            </span>
+                            {icon}
+                          </div>
+                        </TableCell>
+                        <TableCell>{entry.name}</TableCell>
+                        <TableCell>{entry.totalPoints}</TableCell>
+                        <TableCell>{entry.wins}</TableCell>
+                        <TableCell>
+                          {entry.averagePosition
+                            ? entry.averagePosition.toFixed(2)
+                            : "-"}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
