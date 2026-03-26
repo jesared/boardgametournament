@@ -592,6 +592,9 @@ export async function duplicateRound(formData: FormData) {
   if (!source || source.sessionId !== sessionId) {
     redirectWithError(`/sessions/${sessionId}/rounds`, "Manche introuvable.");
   }
+  if (!source) {
+    return;
+  }
 
   const order = (lastRound?.order ?? 0) + 1;
 
