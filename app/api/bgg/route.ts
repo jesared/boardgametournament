@@ -14,7 +14,7 @@ const redis =
       })
     : null;
 
-export const runtime = "edge";
+export const runtime = "nodejs";
 
 const CACHE_SECONDS = 60 * 60; // 1h
 
@@ -30,6 +30,7 @@ async function fetchXml(path: string) {
         headers: {
           "User-Agent": "BoardGameTournamentManager/1.0",
           Accept: "text/xml,application/xml;q=0.9,*/*;q=0.8",
+          "Accept-Language": "fr-FR,fr;q=0.8,en;q=0.6",
         },
         cache: "no-store",
       });
