@@ -1,8 +1,3 @@
-const BGG_BASE_URLS = [
-  "https://boardgamegeek.com/xmlapi2",
-  "https://api.geekdo.com/xmlapi2",
-];
-
 const ENTITY_MAP: Record<string, string> = {
   "&amp;": "&",
   "&quot;": "\"",
@@ -21,32 +16,29 @@ function extractAttribute(fragment: string, attribute: string) {
 }
 
 async function fetchXml(path: string) {
-  let lastError: Error | null = null;
-  for (const base of BGG_BASE_URLS) {
-    for (let attempt = 0; attempt < 3; attempt += 1) {
-      const response = await fetch(`${base}${path}`, {
-        headers: {
-          "User-Agent": "BoardGameTournamentManager/1.0",
-          Accept: "text/xml,application/xml;q=0.9,*/*;q=0.8",
-        },
-        cache: "no-store",
-      });
-      if (response.status === 202) {
-        await new Promise((resolve) =>
-          setTimeout(resolve, 800 * (attempt + 1)),
-        );
-        continue;
-      }
-      if (response.ok) {
-        return response.text();
-      }
-      lastError = new Error(`BGG error ${response.status}`);
-      if (response.status === 401 || response.status === 403) {
-        break;
-      }
-    }
+  const baseUrl =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
+    "http://localhost:3000";
+  const url = new URL(`${baseUrl}/api/bgg`);
+
+  if (path.startsWith("/search")) {
+    const query = new URLSearchParams(path.split("?")[1] ?? "");
+    url.searchParams.set("type", "search");
+    url.searchParams.set("query", query.get("query") ?? "");
+  } else if (path.startsWith("/thing")) {
+    const query = new URLSearchParams(path.split("?")[1] ?? "");
+    url.searchParams.set("type", "thing");
+    url.searchParams.set("id", query.get("id") ?? "");
+  } else {
+    throw new Error("BGG path invalide.");
   }
-  throw lastError ?? new Error("BGG reponse indisponible.");
+
+  const response = await fetch(url.toString(), { cache: "no-store" });
+  if (!response.ok) {
+    throw new Error(`BGG error ${response.status}`);
+  }
+  return response.text();
 }
 
 export type BggSearchResult = {
