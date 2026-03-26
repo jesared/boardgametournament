@@ -1,0 +1,31 @@
+# dependencies
+node_modules/
+.pnpm-store/
+.pnp/
+
+# build
+.next/
+out/
+dist/
+
+# env
+.env
+.env.local
+.env.*.local
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# misc
+*.log
+
+# local workspaces
+tfg-refonte/
+trophee/
