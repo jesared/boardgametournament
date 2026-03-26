@@ -182,9 +182,12 @@ export default async function SessionRoundsPage(
                     <CardTitle>Manche {round.order}</CardTitle>
                     <div className="flex flex-wrap items-center gap-2">
                       {isLocked ? (
-                        <Badge className="border-accent/60 bg-accent/30 text-foreground ring-1 ring-accent/40">
-                          Valide le {formatDate(round.validatedAt)}
-                        </Badge>
+                    <Badge className="border-accent/60 bg-accent/30 text-foreground ring-1 ring-accent/40">
+                      Valide le{" "}
+                      {round.validatedAt
+                        ? formatDate(round.validatedAt)
+                        : "—"}
+                    </Badge>
                       ) : (
                         <Badge className="border-secondary/60 bg-secondary/30 text-foreground ring-1 ring-secondary/40">
                           En edition
