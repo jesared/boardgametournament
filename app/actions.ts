@@ -677,6 +677,9 @@ export async function addParticipant(formData: FormData) {
       "Table introuvable.",
     );
   }
+  if (!table) {
+    return;
+  }
 
   const player = await prisma.player.findFirst({
     where: { id: playerId, sessionId },
