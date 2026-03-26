@@ -7,8 +7,6 @@ import {
   dedupeGames,
   dedupePlayers,
   forceUserSignOut,
-  importGameFromBgg,
-  importGameFromAtlas,
   inviteUser,
   addGameGlobal,
   migrateTemplateGames,
@@ -32,8 +30,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { sessionTemplates } from "@/lib/session-templates";
-import { searchBggGames } from "@/lib/bgg";
-import { searchBoardGameAtlas } from "@/lib/bga";
+import { BggSearchPanel } from "@/components/bgg-search-panel";
 import { prisma } from "@/lib/prisma";
 
 const roleBadgeClass = (role: string) => {
@@ -127,36 +124,7 @@ export default async function AdminPage(
     include: { admin: true },
   });
 
-  const searchParams = await props.searchParams;
-  const bggQueryRaw =
-    typeof searchParams?.bggQuery === "string"
-      ? searchParams.bggQuery.trim()
-      : "";
-  const bggQuery = bggQueryRaw.length > 0 ? bggQueryRaw : "";
-  let bggResults: Awaited<ReturnType<typeof searchBggGames>> = [];
-  let bgaResults: Awaited<ReturnType<typeof searchBoardGameAtlas>> = [];
-  let bggError: string | null = null;
-  if (bggQuery.length >= 2) {
-    try {
-      bggResults = await searchBggGames(bggQuery);
-    } catch (error) {
-      bggError =
-        error instanceof Error ? error.message : "BGG indisponible.";
-    }
-  }
-  if (bggQuery.length >= 2 && bggResults.length === 0) {
-    const clientId = process.env.BGA_CLIENT_ID ?? "";
-    if (clientId) {
-      try {
-        bgaResults = await searchBoardGameAtlas(bggQuery, clientId);
-      } catch (error) {
-        if (!bggError) {
-          bggError =
-            error instanceof Error ? error.message : "BGA indisponible.";
-        }
-      }
-    }
-  }
+  await props.searchParams;
 
   const totalSessions = sessions.length;
   const totalPlayers = players.length;
@@ -444,92 +412,7 @@ export default async function AdminPage(
         <CardHeader>
           <CardTitle>Importer depuis BGG</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <form action="/admin" className="flex flex-wrap items-end gap-3">
-            <div className="min-w-[220px] flex-1 space-y-2">
-              <label className="text-xs font-medium text-muted-foreground">
-                Recherche BGG
-              </label>
-              <input
-                name="bggQuery"
-                defaultValue={bggQuery}
-                placeholder="Ex: Azul, Terraforming Mars"
-                className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground shadow-sm outline-none transition focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
-              />
-            </div>
-            <button
-              type="submit"
-              className="h-10 rounded-lg border border-border px-4 text-sm font-semibold text-foreground transition-colors duration-300 hover:bg-muted"
-            >
-              Rechercher
-            </button>
-          </form>
-
-          {bggQuery.length < 2 ? (
-            <p className="text-sm text-muted-foreground">
-              Entrez au moins 2 caracteres pour lancer une recherche.
-            </p>
-          ) : bggError ? (
-            <p className="text-sm text-destructive">
-              {bggError}. Reessayez plus tard.
-            </p>
-          ) : bggResults.length === 0 && bgaResults.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Aucun resultat BGG pour “{bggQuery}”.
-            </p>
-          ) : (
-            <div className="space-y-2">
-              {bggResults.map((result) => (
-                <div
-                  key={result.id}
-                  className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-muted px-4 py-3 text-sm"
-                >
-                  <div>
-                    <p className="font-semibold">
-                      {result.name} {result.year ? `(${result.year})` : ""}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      BGG #{result.id}
-                    </p>
-                  </div>
-                  <form action={importGameFromBgg}>
-                    <input type="hidden" name="bggId" value={result.id} />
-                    <button
-                      type="submit"
-                      className="rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground transition-colors duration-300 hover:bg-primary/90"
-                    >
-                      Importer
-                    </button>
-                  </form>
-                </div>
-              ))}
-              {bgaResults.map((result) => (
-                <div
-                  key={result.id}
-                  className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-muted px-4 py-3 text-sm"
-                >
-                  <div>
-                    <p className="font-semibold">
-                      {result.name} {result.year ? `(${result.year})` : ""}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Board Game Atlas #{result.id}
-                    </p>
-                  </div>
-                  <form action={importGameFromAtlas}>
-                    <input type="hidden" name="bgaId" value={result.id} />
-                    <button
-                      type="submit"
-                      className="rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground transition-colors duration-300 hover:bg-primary/90"
-                    >
-                      Importer
-                    </button>
-                  </form>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
+        <CardContent className="space-y-4">\n          <BggSearchPanel />\n        </CardContent>
       </Card>
 
       <Card>
@@ -928,3 +811,4 @@ export default async function AdminPage(
     </div>
   );
 }
+
