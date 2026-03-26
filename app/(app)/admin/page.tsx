@@ -29,6 +29,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { sessionTemplates } from "@/lib/session-templates";
 import { prisma } from "@/lib/prisma";
 
@@ -40,6 +41,13 @@ const roleBadgeClass = (role: string) => {
     return "border-secondary/70 bg-secondary/30 text-foreground ring-1 ring-secondary/40";
   }
   return "border-muted-foreground/40 bg-muted/60 text-foreground ring-1 ring-muted-foreground/30";
+};
+
+const roleLabel = (role: string) => {
+  if (role === "admin") return "Admin";
+  if (role === "organizer") return "Organisateur";
+  if (role === "viewer") return "Lecteur";
+  return role;
 };
 
 const normalizeName = (value: string) => value.trim().toLowerCase();
@@ -178,16 +186,277 @@ export default async function AdminPage(
 
   return (
     <div className="space-y-6">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="space-y-1">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Admin
+          </p>
+          <h1 className="text-3xl font-semibold tracking-tight">
+            Console d'administration
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Vue globale, gestion des utilisateurs et maintenance.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <form action={revalidateAllRankings}>
+            <button
+              type="submit"
+              className="h-10 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors duration-300 hover:bg-primary/90"
+            >
+              Recalculer tous les classements
+            </button>
+          </form>
+          <a
+            href="/admin/export/csv"
+            className="inline-flex h-10 items-center rounded-lg border border-border px-4 text-sm font-semibold text-foreground transition-colors duration-300 hover:bg-muted"
+          >
+            Export CSV global
+          </a>
+          <a
+            href="/admin/export/pdf"
+            className="inline-flex h-10 items-center rounded-lg border border-border px-4 text-sm font-semibold text-foreground transition-colors duration-300 hover:bg-muted"
+          >
+            Export PDF global
+          </a>
+        </div>
+      </div>
+
+      <Tabs defaultValue="gestion" className="space-y-4">
+        <div className="sticky top-4 z-10 rounded-2xl border border-border bg-card/80 p-2 backdrop-blur">
+          <TabsList className="w-full justify-start">
+            <TabsTrigger value="gestion">Gestion</TabsTrigger>
+            <TabsTrigger value="donnees">Donnees</TabsTrigger>
+            <TabsTrigger value="audit">Audit</TabsTrigger>
+          </TabsList>
+        </div>
+
+        <TabsContent value="gestion" className="space-y-6">
       <Card>
         <CardHeader>
           <CardTitle>Gestion des utilisateurs</CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground">
-          Admin : {counts.admin} · Organisateur : {counts.organizer} · Viewer :{" "}
+          Admin : {counts.admin} · Organisateur : {counts.organizer} · Lecteur :{" "}
           {counts.viewer} · Total : {counts.total}
         </CardContent>
       </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Sessions globales</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Session</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Joueurs</TableHead>
+                  <TableHead>Manches</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {sessions.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-sm text-muted-foreground">
+                      Aucune session.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  sessions.map((sessionItem) => (
+                    <TableRow key={sessionItem.id}>
+                      <TableCell className="font-medium">
+                        {sessionItem.name}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {sessionItem.date.toLocaleDateString("fr-FR")}
+                      </TableCell>
+                      <TableCell>{sessionItem._count.players}</TableCell>
+                      <TableCell>{sessionItem._count.rounds}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex flex-wrap items-center justify-end gap-2">
+                          <a
+                            href={`/sessions/${sessionItem.id}`}
+                            className="rounded-lg border border-border px-3 py-1 text-xs font-semibold text-foreground transition-colors duration-300 hover:bg-muted"
+                          >
+                            Ouvrir
+                          </a>
+                          <DeleteSessionDialog
+                            sessionId={sessionItem.id}
+                            sessionName={sessionItem.name}
+                          />
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
 
+        <Card>
+          <CardHeader>
+            <CardTitle>Inviter un utilisateur</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form action={inviteUser} className="flex flex-wrap items-end gap-3">
+              <div className="min-w-[220px] flex-1 space-y-2">
+                <label className="text-xs font-medium text-muted-foreground">
+                  Email
+                </label>
+                <input
+                  name="email"
+                  type="email"
+                  placeholder="nom@exemple.com"
+                  className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground shadow-sm outline-none transition focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
+                  required
+                />
+              </div>
+              <div className="min-w-[160px] space-y-2">
+                <label className="text-xs font-medium text-muted-foreground">
+                  Role
+                </label>
+                <select
+                  name="role"
+                  defaultValue="organizer"
+                  className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground shadow-sm outline-none transition focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
+                >
+                  <option value="admin">Admin</option>
+                  <option value="organizer">Organisateur</option>
+                  <option value="viewer">Lecteur</option>
+                </select>
+              </div>
+              <button
+                type="submit"
+                className="h-10 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors duration-300 hover:bg-primary/90"
+              >
+                Inviter
+              </button>
+            </form>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Comptes</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Utilisateur</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Etat</TableHead>
+                    <TableHead>Derniere connexion</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {users.map((user) => {
+                    const isSelf = user.id === session.user?.id;
+                    return (
+                      <TableRow key={user.id}>
+                        <TableCell className="font-medium">
+                          <div className="space-y-1">
+                            <p>{user.name ?? "Utilisateur"}</p>
+                            {isSelf ? (
+                              <p className="text-xs text-muted-foreground">
+                                Vous
+                              </p>
+                            ) : null}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {user.email ?? "Sans email"}
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={roleBadgeClass(user.role)}>
+                            {roleLabel(user.role)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            className={
+                              user.isActive
+                                ? "border-secondary/70 bg-secondary/30 text-foreground ring-1 ring-secondary/40"
+                                : "border-destructive/70 bg-destructive/30 text-foreground ring-1 ring-destructive/40"
+                            }
+                          >
+                            {user.isActive ? "Actif" : "Bloque"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {user.lastLoginAt
+                            ? user.lastLoginAt.toLocaleString("fr-FR")
+                            : "—"}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex flex-wrap items-center justify-end gap-2">
+                            <form action={updateUserRole} className="flex items-center gap-2">
+                              <input type="hidden" name="userId" value={user.id} />
+                              <select
+                                name="role"
+                                defaultValue={user.role}
+                                disabled={isSelf}
+                                className="h-9 rounded-lg border border-input bg-background px-3 text-sm text-foreground shadow-sm outline-none transition focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                <option value="admin">Admin</option>
+                                <option value="organizer">Organisateur</option>
+                                <option value="viewer">Lecteur</option>
+                              </select>
+                              <button
+                                type="submit"
+                                className="rounded-lg border border-border px-3 py-1 text-xs font-semibold text-foreground transition-colors duration-300 hover:bg-muted"
+                                disabled={isSelf}
+                              >
+                                Mettre a jour
+                              </button>
+                            </form>
+                            <form action={setUserActive}>
+                              <input type="hidden" name="userId" value={user.id} />
+                              <input
+                                type="hidden"
+                                name="active"
+                                value={user.isActive ? "false" : "true"}
+                              />
+                              <button
+                                type="submit"
+                                disabled={isSelf}
+                                className="rounded-lg border border-border px-3 py-1 text-xs font-semibold text-foreground transition-colors duration-300 hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                {user.isActive ? "Bloquer" : "Reactiver"}
+                              </button>
+                            </form>
+                            <form action={forceUserSignOut}>
+                              <input type="hidden" name="userId" value={user.id} />
+                              <button
+                                type="submit"
+                                disabled={isSelf}
+                                className="rounded-lg border border-border px-3 py-1 text-xs font-semibold text-foreground transition-colors duration-300 hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                Forcer reconnexion
+                              </button>
+                            </form>
+                            {!isSelf ? (
+                              <DeleteUserDialog userId={user.id} email={user.email} />
+                            ) : null}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      </TabsContent>
+
+      <TabsContent value="donnees" className="space-y-6">
       <Card>
         <CardHeader>
           <CardTitle>Insights &amp; monitoring</CardTitle>
@@ -234,34 +503,6 @@ export default async function AdminPage(
               <p>Noms jeux vides: {emptyGameNames}</p>
             </div>
           </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Actions globales</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-wrap gap-3">
-          <form action={revalidateAllRankings}>
-            <button
-              type="submit"
-              className="h-10 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors duration-300 hover:bg-primary/90"
-            >
-              Recalculer tous les classements
-            </button>
-          </form>
-          <a
-            href="/admin/export/csv"
-            className="inline-flex h-10 items-center rounded-lg border border-border px-4 text-sm font-semibold text-foreground transition-colors duration-300 hover:bg-muted"
-          >
-            Export CSV global
-          </a>
-          <a
-            href="/admin/export/pdf"
-            className="inline-flex h-10 items-center rounded-lg border border-border px-4 text-sm font-semibold text-foreground transition-colors duration-300 hover:bg-muted"
-          >
-            Export PDF global
-          </a>
         </CardContent>
       </Card>
 
@@ -491,218 +732,9 @@ export default async function AdminPage(
           </form>
         </CardContent>
       </Card>
+      </TabsContent>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Sessions globales</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Session</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Joueurs</TableHead>
-                <TableHead>Manches</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sessions.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-sm text-muted-foreground">
-                    Aucune session.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                sessions.map((sessionItem) => (
-                  <TableRow key={sessionItem.id}>
-                    <TableCell className="font-medium">
-                      {sessionItem.name}
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {sessionItem.date.toLocaleDateString("fr-FR")}
-                    </TableCell>
-                    <TableCell>{sessionItem._count.players}</TableCell>
-                    <TableCell>{sessionItem._count.rounds}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex flex-wrap items-center justify-end gap-2">
-                        <a
-                          href={`/sessions/${sessionItem.id}`}
-                          className="rounded-lg border border-border px-3 py-1 text-xs font-semibold text-foreground transition-colors duration-300 hover:bg-muted"
-                        >
-                          Ouvrir
-                        </a>
-                        <DeleteSessionDialog
-                          sessionId={sessionItem.id}
-                          sessionName={sessionItem.name}
-                        />
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Inviter un utilisateur</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form action={inviteUser} className="flex flex-wrap items-end gap-3">
-            <div className="min-w-[220px] flex-1 space-y-2">
-              <label className="text-xs font-medium text-muted-foreground">
-                Email
-              </label>
-              <input
-                name="email"
-                type="email"
-                placeholder="nom@exemple.com"
-                className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground shadow-sm outline-none transition focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
-                required
-              />
-            </div>
-            <div className="min-w-[160px] space-y-2">
-              <label className="text-xs font-medium text-muted-foreground">
-                Role
-              </label>
-              <select
-                name="role"
-                defaultValue="organizer"
-                className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground shadow-sm outline-none transition focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
-              >
-                <option value="admin">admin</option>
-                <option value="organizer">organizer</option>
-                <option value="viewer">viewer</option>
-              </select>
-            </div>
-            <button
-              type="submit"
-              className="h-10 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors duration-300 hover:bg-primary/90"
-            >
-              Inviter
-            </button>
-          </form>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Comptes</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Utilisateur</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Etat</TableHead>
-                <TableHead>Derniere connexion</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {users.map((user) => {
-                const isSelf = user.id === session.user?.id;
-                return (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">
-                      <div className="space-y-1">
-                        <p>{user.name ?? "Utilisateur"}</p>
-                        {isSelf ? (
-                          <p className="text-xs text-muted-foreground">
-                            Vous
-                          </p>
-                        ) : null}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {user.email ?? "Sans email"}
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={roleBadgeClass(user.role)}>
-                        {user.role}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        className={
-                          user.isActive
-                            ? "border-secondary/70 bg-secondary/30 text-foreground ring-1 ring-secondary/40"
-                            : "border-destructive/70 bg-destructive/30 text-foreground ring-1 ring-destructive/40"
-                        }
-                      >
-                        {user.isActive ? "Actif" : "Bloque"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {user.lastLoginAt
-                        ? user.lastLoginAt.toLocaleString("fr-FR")
-                        : "—"}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex flex-wrap items-center justify-end gap-2">
-                        <form action={updateUserRole} className="flex items-center gap-2">
-                          <input type="hidden" name="userId" value={user.id} />
-                          <select
-                            name="role"
-                            defaultValue={user.role}
-                            disabled={isSelf}
-                            className="h-9 rounded-lg border border-input bg-background px-3 text-sm text-foreground shadow-sm outline-none transition focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            <option value="admin">admin</option>
-                            <option value="organizer">organizer</option>
-                            <option value="viewer">viewer</option>
-                          </select>
-                          <button
-                            type="submit"
-                            className="rounded-lg border border-border px-3 py-1 text-xs font-semibold text-foreground transition-colors duration-300 hover:bg-muted"
-                            disabled={isSelf}
-                          >
-                            Mettre a jour
-                          </button>
-                        </form>
-                        <form action={setUserActive}>
-                          <input type="hidden" name="userId" value={user.id} />
-                          <input
-                            type="hidden"
-                            name="active"
-                            value={user.isActive ? "false" : "true"}
-                          />
-                          <button
-                            type="submit"
-                            disabled={isSelf}
-                            className="rounded-lg border border-border px-3 py-1 text-xs font-semibold text-foreground transition-colors duration-300 hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            {user.isActive ? "Bloquer" : "Reactiver"}
-                          </button>
-                        </form>
-                        <form action={forceUserSignOut}>
-                          <input type="hidden" name="userId" value={user.id} />
-                          <button
-                            type="submit"
-                            disabled={isSelf}
-                            className="rounded-lg border border-border px-3 py-1 text-xs font-semibold text-foreground transition-colors duration-300 hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            Forcer reconnexion
-                          </button>
-                        </form>
-                        {!isSelf ? (
-                          <DeleteUserDialog userId={user.id} email={user.email} />
-                        ) : null}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      <TabsContent value="audit" className="space-y-6">
 
       <Card>
         <CardHeader>
@@ -800,6 +832,8 @@ export default async function AdminPage(
           </Table>
         </CardContent>
       </Card>
+      </TabsContent>
+    </Tabs>
     </div>
   );
 }
