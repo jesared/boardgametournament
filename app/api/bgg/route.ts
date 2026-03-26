@@ -102,12 +102,15 @@ export async function GET(request: Request) {
 
   let path = "";
   let cacheKey = "";
+  let staleKey = "";
+  const isThing = type === "thing" && Boolean(id);
   if (type === "search" && query) {
     path = `/search?query=${encodeURIComponent(query)}&type=boardgame`;
     cacheKey = `bgg:search:${query.toLowerCase()}`;
   } else if (type === "thing" && id) {
     path = `/thing?id=${encodeURIComponent(id)}&type=boardgame`;
     cacheKey = `bgg:thing:${id}`;
+    staleKey = `bgg:thing:last:${id}`;
   } else {
     return NextResponse.json({ error: "params invalides" }, { status: 400 });
   }
@@ -137,6 +140,18 @@ export async function GET(request: Request) {
     xml = await fetchXml(path);
   } catch (error) {
     const status = (error as { status?: number }).status;
+    if (status === 401 || status === 403) {
+      const stale =
+        (staleKey ? await getCached(staleKey) : null) || localCached;
+      if (stale) {
+        return new NextResponse(stale, {
+          headers: {
+            "Content-Type": "text/xml; charset=utf-8",
+            "Cache-Control": "s-maxage=600, stale-while-revalidate=3600",
+          },
+        });
+      }
+    }
     if ((status === 401 || status === 403) && localCached) {
       return new NextResponse(localCached, {
         headers: {
@@ -150,6 +165,9 @@ export async function GET(request: Request) {
 
   setLocalCached(cacheKey, xml);
   await setCached(cacheKey, xml);
+  if (isThing && staleKey) {
+    await setCached(staleKey, xml);
+  }
 
   return new NextResponse(xml, {
     headers: {
