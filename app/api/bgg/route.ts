@@ -17,6 +17,20 @@ const redis =
 export const runtime = "nodejs";
 
 const CACHE_SECONDS = 60 * 60; // 1h
+const LOCAL_CACHE_MS = 10 * 60 * 1000; // 10min fallback in-memory
+
+type LocalCacheEntry = {
+  value: string;
+  expiresAt: number;
+};
+
+const localCache =
+  (globalThis as typeof globalThis & {
+    __bggLocalCache?: Map<string, LocalCacheEntry>;
+  }).__bggLocalCache ?? new Map<string, LocalCacheEntry>();
+
+(globalThis as typeof globalThis & { __bggLocalCache?: typeof localCache }).__bggLocalCache =
+  localCache;
 
 async function sleep(ms: number) {
   await new Promise((resolve) => setTimeout(resolve, ms));
@@ -41,7 +55,9 @@ async function fetchXml(path: string) {
       if (response.ok) {
         return response.text();
       }
-      lastError = new Error(`BGG error ${response.status}`);
+      const error = new Error(`BGG error ${response.status}`);
+      (error as Error & { status?: number }).status = response.status;
+      lastError = error;
       if (response.status === 401 || response.status === 403) {
         break;
       }
@@ -58,6 +74,20 @@ async function getCached(key: string) {
 async function setCached(key: string, value: string) {
   if (!redis) return;
   await redis.set(key, value, { ex: CACHE_SECONDS });
+}
+
+function getLocalCached(key: string) {
+  const entry = localCache.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expiresAt) {
+    localCache.delete(key);
+    return null;
+  }
+  return entry.value;
+}
+
+function setLocalCached(key: string, value: string) {
+  localCache.set(key, { value, expiresAt: Date.now() + LOCAL_CACHE_MS });
 }
 
 export async function GET(request: Request) {
@@ -92,7 +122,33 @@ export async function GET(request: Request) {
     });
   }
 
-  const xml = await fetchXml(path);
+  const localCached = getLocalCached(cacheKey);
+  if (localCached) {
+    return new NextResponse(localCached, {
+      headers: {
+        "Content-Type": "text/xml; charset=utf-8",
+        "Cache-Control": "s-maxage=600, stale-while-revalidate=3600",
+      },
+    });
+  }
+
+  let xml: string;
+  try {
+    xml = await fetchXml(path);
+  } catch (error) {
+    const status = (error as { status?: number }).status;
+    if ((status === 401 || status === 403) && localCached) {
+      return new NextResponse(localCached, {
+        headers: {
+          "Content-Type": "text/xml; charset=utf-8",
+          "Cache-Control": "s-maxage=600, stale-while-revalidate=3600",
+        },
+      });
+    }
+    throw error;
+  }
+
+  setLocalCached(cacheKey, xml);
   await setCached(cacheKey, xml);
 
   return new NextResponse(xml, {
