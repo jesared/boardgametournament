@@ -438,6 +438,7 @@ export async function importSessionJson(formData: FormData) {
 
   if (!payload || !payload.session?.name || !payload.session?.date) {
     redirectWithError("/dashboard", "Session manquante dans le JSON.");
+    return;
   }
 
   const date = new Date(payload.session.date);
