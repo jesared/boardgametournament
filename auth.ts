@@ -39,8 +39,16 @@ export const authOptions: NextAuthOptions = {
     async session({ session, user }) {
       if (session.user) {
         session.user.id = user.id;
-        session.user.role = (user as { role?: string }).role ?? "organizer";
-        session.user.isActive =
+        const rawRole = (user as { role?: string }).role ?? "organizer";
+        const normalizedRole = rawRole.toLowerCase();
+        const role =
+          normalizedRole === "admin"
+            ? "admin"
+            : normalizedRole === "viewer"
+              ? "viewer"
+              : "organizer";
+        session.user.role = role as unknown as typeof session.user.role;
+        (session.user as { isActive?: boolean }).isActive =
           (user as { isActive?: boolean }).isActive ?? true;
       }
       return session;

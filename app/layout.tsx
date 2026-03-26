@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import type { CSSProperties } from "react";
 import { Poppins, Roboto_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -44,10 +45,12 @@ export default function RootLayout({
       lang="fr"
       className={`h-full ${poppins.variable} ${robotoMono.variable}`}
       suppressHydrationWarning
-      style={{
-        "--font-serif":
-          'ui-serif, "Iowan Old Style", "Palatino", "Times New Roman", serif',
-      }}
+      style={
+        {
+          "--font-serif":
+            'ui-serif, "Iowan Old Style", "Palatino", "Times New Roman", serif',
+        } as CSSProperties
+      }
     >
       <body
         className="min-h-full bg-background text-foreground font-sans font-normal transition-colors duration-300 antialiased"

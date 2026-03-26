@@ -18,10 +18,12 @@ export default async function AppLayout({
   if (!session) {
     redirect("/login");
   }
-  if (session.user?.isActive === false) {
+  const userRole = String(session.user?.role ?? "");
+  const isActive = (session.user as { isActive?: boolean } | undefined)?.isActive;
+  if (isActive === false) {
     redirect("/unauthorized");
   }
-  if (session.user?.role !== "organizer" && session.user?.role !== "admin") {
+  if (userRole !== "organizer" && userRole !== "admin") {
     redirect("/unauthorized");
   }
   const sessions = await prisma.tournamentSession.findMany({
@@ -46,7 +48,7 @@ export default async function AppLayout({
             <nav className="mt-4 space-y-2 text-sm">
               <SidebarLink href="/dashboard">Tableau de bord</SidebarLink>
               <SidebarLink href="/sessions/new">Nouvelle session</SidebarLink>
-              {session.user?.role === "admin" ? (
+              {userRole === "admin" ? (
                 <SidebarLink href="/admin">Admin</SidebarLink>
               ) : null}
             </nav>

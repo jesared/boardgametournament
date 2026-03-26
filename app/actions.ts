@@ -88,7 +88,7 @@ async function requireAdmin() {
   if (!session) {
     redirect("/login");
   }
-  if (session.user?.role !== "admin") {
+  if (String(session.user?.role) !== "admin") {
     redirect("/unauthorized");
   }
   return session;
@@ -939,10 +939,12 @@ export async function autoGenerateTables(formData: FormData) {
 
   if (!round || round.sessionId !== sessionId) {
     redirectWithError(`/sessions/${sessionId}/rounds`, "Manche introuvable.");
+    return;
   }
 
   if (!game) {
     redirectWithError(`/sessions/${sessionId}/rounds`, "Jeu introuvable.");
+    return;
   }
 
   if (existingTables.length > 0) {
@@ -1243,13 +1245,18 @@ export async function importGameFromBgg(formData: FormData) {
   const session = await requireAdmin();
   const bggId = requiredString(formData, "bggId", "Jeu BGG");
 
-  let details;
+  let details: Awaited<ReturnType<typeof fetchBggGameDetails>> | null = null;
   try {
     details = await fetchBggGameDetails(bggId);
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "BGG indisponible.";
     redirectWithError("/admin", message);
+    return;
+  }
+  if (!details) {
+    redirectWithError("/admin", "BGG indisponible.");
+    return;
   }
   const existing = await prisma.game.findFirst({
     where: {
@@ -1297,15 +1304,21 @@ export async function importGameFromAtlas(formData: FormData) {
 
   if (!clientId) {
     redirectWithError("/admin", "BGA_CLIENT_ID manquant.");
+    return;
   }
 
-  let details;
+  let details: Awaited<ReturnType<typeof fetchBoardGameAtlasGame>> | null = null;
   try {
     details = await fetchBoardGameAtlasGame(bgaId, clientId);
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "BGA indisponible.";
     redirectWithError("/admin", message);
+    return;
+  }
+  if (!details) {
+    redirectWithError("/admin", "BGA indisponible.");
+    return;
   }
 
   const existing = await prisma.game.findFirst({
@@ -1355,7 +1368,7 @@ export async function deleteSession(formData: FormData) {
   });
 
   const adminSession = await getServerSession(authOptions);
-  if (adminSession?.user?.role === "admin") {
+  if (adminSession?.user && String(adminSession.user.role) === "admin") {
     await logAdminAction({
       adminId: adminSession.user.id,
       action: "delete-session",
@@ -1449,6 +1462,7 @@ export async function importPlayersCsv(formData: FormData) {
 
   if (!file || !(file instanceof File)) {
     redirectWithError(`/sessions/${sessionId}/players`, "Fichier CSV requis.");
+    return;
   }
 
   const text = await file.text();
@@ -1459,6 +1473,7 @@ export async function importPlayersCsv(formData: FormData) {
       `/sessions/${sessionId}/players`,
       "Aucun joueur valide trouve dans le CSV.",
     );
+    return;
   }
 
   const existing = await prisma.player.findMany({
@@ -1509,6 +1524,7 @@ export async function updateUserRole(formData: FormData) {
 
   if (!nextRole) {
     redirectWithError("/admin", "Role invalide.");
+    return;
   }
 
   if (userId === session.user?.id && nextRole !== "admin") {
@@ -1516,6 +1532,7 @@ export async function updateUserRole(formData: FormData) {
       "/admin",
       "Impossible de retirer vos propres droits admin.",
     );
+    return;
   }
 
   await prisma.user.update({
@@ -1574,11 +1591,13 @@ export async function inviteUser(formData: FormData) {
 
   if (!nextRole) {
     redirectWithError("/admin", "Role invalide.");
+    return;
   }
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
     redirectWithError("/admin", "Un compte avec cet email existe deja.");
+    return;
   }
 
   await prisma.user.create({
@@ -1611,6 +1630,7 @@ export async function setUserActive(formData: FormData) {
       "/admin",
       "Vous ne pouvez pas desactiver votre propre compte.",
     );
+    return;
   }
 
   await prisma.user.update({
@@ -1857,6 +1877,7 @@ export async function migrateTemplateGames(formData: FormData) {
   const template = sessionTemplates.find((item) => item.id === templateId);
   if (!template) {
     redirectWithError("/admin", "Template introuvable.");
+    return;
   }
 
   const existing = await prisma.game.findMany({
@@ -1870,6 +1891,7 @@ export async function migrateTemplateGames(formData: FormData) {
 
   if (toCreate.length === 0) {
     redirectWithSuccess("/admin", "Aucun jeu a migrer.");
+    return;
   }
 
   await prisma.game.createMany({

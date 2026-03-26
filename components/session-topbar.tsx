@@ -24,7 +24,7 @@ export async function SessionTopbar({
   badge = "Session",
 }: SessionTopbarProps) {
   const session = await getServerSession(authOptions);
-  const role = session?.user?.role ?? "viewer";
+  const role = String(session?.user?.role ?? "viewer").toLowerCase();
 
   return (
     <div className="flex flex-wrap items-start justify-between gap-4">

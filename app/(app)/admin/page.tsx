@@ -55,7 +55,7 @@ export default async function AdminPage(
   if (!session) {
     redirect("/login");
   }
-  if (session.user?.role !== "admin") {
+  if (String(session.user?.role) !== "admin") {
     redirect("/unauthorized");
   }
 
