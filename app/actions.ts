@@ -427,10 +427,11 @@ export async function importSessionJson(formData: FormData) {
   if (!file || !(file instanceof File)) {
     redirectWithError("/dashboard", "Fichier JSON requis.");
   }
+  const safeFile = file as File;
 
   let payload: SessionImportPayload;
   try {
-    payload = JSON.parse(await file.text()) as SessionImportPayload;
+    payload = JSON.parse(await safeFile.text()) as SessionImportPayload;
   } catch {
     redirectWithError("/dashboard", "JSON invalide.");
   }
