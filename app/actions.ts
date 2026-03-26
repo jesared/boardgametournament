@@ -166,6 +166,7 @@ async function buildRoundValidation(roundId: string, sessionId: string) {
       "Manche introuvable pour cette session.",
     );
   }
+  const safeRound = round!;
 
   const players = await prisma.player.findMany({
     where: { sessionId },
@@ -174,7 +175,7 @@ async function buildRoundValidation(roundId: string, sessionId: string) {
   const participantMap = new Map<string, number>();
   const errors: string[] = [];
 
-  for (const table of round.tables) {
+  for (const table of safeRound.tables) {
     const count = table.participants.length;
     if (count < table.game.minPlayers || count > table.game.maxPlayers) {
       errors.push(
@@ -213,13 +214,13 @@ async function buildRoundValidation(roundId: string, sessionId: string) {
     );
   }
 
-  const pointsAwarded = round.tables
+  const pointsAwarded = safeRound.tables
     .flatMap((table) => table.participants)
     .reduce((total, participant) => {
       return total + pointsForPosition(participant.position);
     }, 0);
 
-  return { round, errors, pointsAwarded };
+  return { round: safeRound, errors, pointsAwarded };
 }
 
 async function maybeAutoValidateRound(roundId: string, sessionId: string) {
