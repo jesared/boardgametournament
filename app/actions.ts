@@ -429,14 +429,14 @@ export async function importSessionJson(formData: FormData) {
   }
   const safeFile = file as File;
 
-  let payload: SessionImportPayload;
+  let payload: SessionImportPayload | null = null;
   try {
     payload = JSON.parse(await safeFile.text()) as SessionImportPayload;
   } catch {
     redirectWithError("/dashboard", "JSON invalide.");
   }
 
-  if (!payload.session?.name || !payload.session?.date) {
+  if (!payload || !payload.session?.name || !payload.session?.date) {
     redirectWithError("/dashboard", "Session manquante dans le JSON.");
   }
 
