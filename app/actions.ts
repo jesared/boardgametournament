@@ -10,8 +10,6 @@ import { prisma } from "@/lib/prisma";
 import { buildLeaderboard } from "@/lib/leaderboard";
 import { parseOptionalInt, pointsForPosition } from "@/lib/scoring";
 import { sessionTemplates } from "@/lib/session-templates";
-import { fetchBggGameDetails } from "@/lib/bgg";
-import { fetchBoardGameAtlasGame } from "@/lib/bga";
 
 function requiredString(
   formData: FormData,
@@ -816,7 +814,7 @@ export async function previewRoundValidation(formData: FormData) {
       ? `${missingPositions} position(s) manquante(s)`
       : "Toutes les positions sont remplies",
     `Points a attribuer: ${pointsAwarded}`,
-  ].join(" · ");
+  ].join(" � ");
 
   redirectWithSuccess(
     `/sessions/${sessionId}/rounds`,
@@ -1068,7 +1066,7 @@ export async function autoGenerateTables(formData: FormData) {
 
   redirectWithSuccess(
     `/sessions/${sessionId}/rounds`,
-    `Tables generees automatiquement (${tableCount}) · preset ${presetLabel}.`,
+    `Tables generees automatiquement (${tableCount}) � preset ${presetLabel}.`,
   );
 }
 
@@ -1239,125 +1237,6 @@ export async function deleteGameGlobal(formData: FormData) {
 
   revalidatePath("/admin");
   redirectWithSuccess("/admin", "Jeu supprime.");
-}
-
-export async function importGameFromBgg(formData: FormData) {
-  const session = await requireAdmin();
-  const bggId = requiredString(formData, "bggId", "Jeu BGG");
-
-  let details: Awaited<ReturnType<typeof fetchBggGameDetails>> | null = null;
-  try {
-    details = await fetchBggGameDetails(bggId);
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "BGG indisponible.";
-    redirectWithError("/admin", message);
-    return;
-  }
-  if (!details) {
-    redirectWithError("/admin", "BGG indisponible.");
-    return;
-  }
-  const existing = await prisma.game.findFirst({
-    where: {
-      name: {
-        equals: details.name,
-        mode: "insensitive",
-      },
-    },
-  });
-
-  if (existing) {
-    redirectWithError("/admin", "Ce jeu existe deja dans le catalogue.");
-  }
-
-  const duration = details.playingTime > 0 ? details.playingTime : 30;
-  const minPlayers = Math.max(1, details.minPlayers);
-  const maxPlayers = Math.max(minPlayers, details.maxPlayers);
-
-  const game = await prisma.game.create({
-    data: {
-      name: details.name,
-      minPlayers,
-      maxPlayers,
-      duration,
-      scoringType: "ranking",
-    },
-  });
-
-  await logAdminAction({
-    adminId: session.user.id,
-    action: "import-bgg",
-    entityType: "game",
-    entityId: game.id,
-    message: `Jeu importe: ${details.name} (BGG ${details.id}).`,
-  });
-
-  revalidatePath("/admin");
-  redirectWithSuccess("/admin", "Jeu importe depuis BGG.");
-}
-
-export async function importGameFromAtlas(formData: FormData) {
-  const session = await requireAdmin();
-  const bgaId = requiredString(formData, "bgaId", "Jeu BGA");
-  const clientId = process.env.BGA_CLIENT_ID ?? "";
-
-  if (!clientId) {
-    redirectWithError("/admin", "BGA_CLIENT_ID manquant.");
-    return;
-  }
-
-  let details: Awaited<ReturnType<typeof fetchBoardGameAtlasGame>> | null = null;
-  try {
-    details = await fetchBoardGameAtlasGame(bgaId, clientId);
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "BGA indisponible.";
-    redirectWithError("/admin", message);
-    return;
-  }
-  if (!details) {
-    redirectWithError("/admin", "BGA indisponible.");
-    return;
-  }
-
-  const existing = await prisma.game.findFirst({
-    where: {
-      name: {
-        equals: details.name,
-        mode: "insensitive",
-      },
-    },
-  });
-
-  if (existing) {
-    redirectWithError("/admin", "Ce jeu existe deja dans le catalogue.");
-  }
-
-  const duration = details.playingTime > 0 ? details.playingTime : 30;
-  const minPlayers = Math.max(1, details.minPlayers);
-  const maxPlayers = Math.max(minPlayers, details.maxPlayers);
-
-  const game = await prisma.game.create({
-    data: {
-      name: details.name,
-      minPlayers,
-      maxPlayers,
-      duration,
-      scoringType: "ranking",
-    },
-  });
-
-  await logAdminAction({
-    adminId: session.user.id,
-    action: "import-bga",
-    entityType: "game",
-    entityId: game.id,
-    message: `Jeu importe: ${details.name} (BGA ${details.id}).`,
-  });
-
-  revalidatePath("/admin");
-  redirectWithSuccess("/admin", "Jeu importe depuis Board Game Atlas.");
 }
 
 export async function deleteSession(formData: FormData) {
@@ -1911,6 +1790,9 @@ export async function migrateTemplateGames(formData: FormData) {
     `${toCreate.length} jeu(x) ajoute(s).`,
   );
 }
+
+
+
 
 
 

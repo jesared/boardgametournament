@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation";
+﻿import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/auth";
@@ -30,7 +30,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { sessionTemplates } from "@/lib/session-templates";
-import { BggSearchPanel } from "@/components/bgg-search-panel";
 import { prisma } from "@/lib/prisma";
 
 const roleBadgeClass = (role: string) => {
@@ -406,13 +405,6 @@ export default async function AdminPage(
             </Table>
           )}
         </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Importer depuis BGG</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">\n          <BggSearchPanel />\n        </CardContent>
       </Card>
 
       <Card>
@@ -811,4 +803,6 @@ export default async function AdminPage(
     </div>
   );
 }
+
+
 
