@@ -502,13 +502,18 @@ export async function importSessionJson(formData: FormData) {
                     "/dashboard",
                     `Joueur introuvable: ${participant.playerName}.`,
                   );
+                  return null;
                 }
                 return {
                   playerId: player.id,
                   position: participant.position ?? null,
                   score: participant.score ?? null,
                 };
-              }),
+              }).filter((value): value is {
+                playerId: string;
+                position: number | null;
+                score: number | null;
+              } => value !== null),
             },
           },
         });
