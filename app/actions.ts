@@ -131,6 +131,10 @@ async function assertRoundEditable(roundId: string, sessionId: string) {
     );
   }
 
+  if (!round) {
+    return;
+  }
+
   if (round.validatedAt) {
     redirectWithError(
       `/sessions/${sessionId}/rounds`,
