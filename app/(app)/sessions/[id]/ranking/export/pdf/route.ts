@@ -73,7 +73,7 @@ export async function GET(
   const leaderboard = buildLeaderboard(players, participants);
   const buffer = await renderPdf(leaderboard, session.name);
 
-  return new Response(buffer, {
+  return new Response(new Uint8Array(buffer), {
     headers: {
       "Content-Type": "application/pdf",
       "Content-Disposition": `attachment; filename=\"classement-${session.name}.pdf\"`,
