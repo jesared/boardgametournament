@@ -487,6 +487,7 @@ export async function importSessionJson(formData: FormData) {
             "/dashboard",
             `Jeu introuvable: ${tableData.gameName}.`,
           );
+          return;
         }
 
         await prisma.table.create({
